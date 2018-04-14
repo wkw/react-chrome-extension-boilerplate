@@ -1,10 +1,11 @@
 const path = require('path');
 const webpack = require('webpack');
+const autoprefixer = require('autoprefixer');
 
 const host = 'localhost';
 const port = 3000;
 const customPath = path.join(__dirname, './customPublicPath');
-const hotScript = 'webpack-hot-middleware/client?path=/__webpack_hmr&dynamicPublicPath=true';
+const hotScript = 'webpack-hot-middleware/client?path=__webpack_hmr&dynamicPublicPath=true';
 
 const baseDevConfig = () => ({
   devtool: 'eval-cheap-module-source-map',
@@ -17,7 +18,8 @@ const baseDevConfig = () => ({
     stats: {
       colors: true
     },
-    noInfo: true
+    noInfo: true,
+    headers: { 'Access-Control-Allow-Origin': '*' }
   },
   hotMiddleware: {
     path: '/js/__webpack_hmr'
@@ -29,7 +31,7 @@ const baseDevConfig = () => ({
   },
   plugins: [
     new webpack.HotModuleReplacementPlugin(),
-    new webpack.NoErrorsPlugin(),
+    new webpack.NoEmitOnErrorsPlugin(),
     new webpack.IgnorePlugin(/[^/]+\/[\S]+.prod$/),
     new webpack.DefinePlugin({
       __HOST__: `'${host}'`,
@@ -40,22 +42,27 @@ const baseDevConfig = () => ({
     })
   ],
   resolve: {
-    extensions: ['', '.js']
+    extensions: ['*', '.js']
   },
   module: {
-    loaders: [{
+    rules: [{
       test: /\.js$/,
-      loader: 'babel',
+      loader: 'babel-loader',
       exclude: /node_modules/,
-      query: {
+      options: {
         presets: ['react-hmre']
       }
     }, {
       test: /\.css$/,
-      loaders: [
-        'style',
-        'css?modules&sourceMap&importLoaders=1&localIdentName=[name]__[local]___[hash:base64:5]',
-        'postcss'
+      use: [
+        'style-loader',
+        'css-loader?modules&sourceMap&importLoaders=1&localIdentName=[name]__[local]___[hash:base64:5]',
+        {
+          loader: 'postcss-loader',
+          options: {
+            plugins: () => [autoprefixer]
+          }
+        }
       ]
     }]
   }
@@ -67,7 +74,7 @@ injectPageConfig.entry = [
   path.join(__dirname, '../chrome/extension/inject')
 ];
 delete injectPageConfig.hotMiddleware;
-delete injectPageConfig.module.loaders[0].query;
+delete injectPageConfig.module.rules[0].options;
 injectPageConfig.plugins.shift(); // remove HotModuleReplacementPlugin
 injectPageConfig.output = {
   path: path.join(__dirname, '../dev/js'),

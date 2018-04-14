@@ -6,6 +6,9 @@ import footerStyle from '../../app/components/Footer.css';
 import mainSectionStyle from '../../app/components/MainSection.css';
 import todoItemStyle from '../../app/components/TodoItem.css';
 import todoTextInputStyle from '../../app/components/TodoTextInput.css';
+import manifest from '../../chrome/manifest.prod.json';
+
+const extensionName = manifest.name;
 
 const findList = driver =>
   driver.findElements(webdriver.By.css(`.${mainSectionStyle.todoList} > li`));
@@ -62,8 +65,11 @@ describe('window (popup) page', function test() {
     const extPath = path.resolve('build');
     driver = buildWebDriver(extPath);
     await driver.get('chrome://extensions-frame');
-    const elems = await driver.findElements(webdriver.By.className('extension-list-item-wrapper'));
-    const extensionId = await elems[1].getAttribute('id');
+    const elems = await driver.findElements(webdriver.By.xpath(
+      '//div[contains(@class, "extension-list-item-wrapper") and ' +
+      `.//h2[contains(text(), "${extensionName}")]]`
+    ));
+    const extensionId = await elems[0].getAttribute('id');
     await driver.get(`chrome-extension://${extensionId}/window.html`);
   });
 
@@ -85,7 +91,7 @@ describe('window (popup) page', function test() {
     const { todo, count } = await editTodo(driver, 0, 'Ya ');
     expect(count).to.equal(2);
     const text = await todo.findElement(webdriver.By.tagName('label')).getText();
-    expect(text).to.equal('Add testsYa');
+    expect(text).to.equal('Ya Add tests');
   });
 
   it('should can complete todo', async () => {
